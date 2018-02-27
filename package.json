@@ -1,0 +1,15 @@
+{
+  "name": "ingics-igs-rchost",
+  "version": "0.1.0",
+  "description": "Remote Control Server example",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "moment": "^2.20.1",
+    "net-keepalive": "^1.1.0"
+  }
+}
