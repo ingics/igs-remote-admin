@@ -1,0 +1,22 @@
+# generate ca
+openssl genrsa -out  test_cert/ca.key 4096
+openssl req -new -x509 -days 9999 -key test_cert/ca.key -out test_cert/ca.crt
+
+# generate server key,certificate
+openssl genrsa -out test_cert/server.key 2048
+openssl req -new -key test_cert/server.key -out test_cert/server.csr
+openssl x509 -req -days 9999 -in test_cert/server.csr -CA test_cert/ca.crt -CAkey test_cert/ca.key -set_serial 01 -out test_cert/server.crt 
+
+# generate clicent key,certificate
+openssl genrsa -out test_cert/client.key 2048
+openssl req -new -key test_cert/client.key -out test_cert/client.csr
+openssl x509 -req -days 9999 -in  test_cert/client.csr -CA test_cert/ca.crt -CAkey test_cert/ca.key -set_serial 02 -out test_cert/client.crt
+
+#wget --no-check-certificate --certificate=./test_cert/client.crt --private-key=./test_cert/client.key https://192.168.1.20:9999/ota/igs03-app-v0.3.24.0.bin
+#openssl verify -CAfile test_cert/ca.crt test_cert/client.crt
+
+#wget --no-check-certificate --certificate=./test_cert/client.crt --private-key=./test_cert/client.key https://192.168.1.20:9999/ota/igs03-app-v1.4.0.bin
+
+# should failed without certificate/private key
+#wget --no-check-certificate https://192.168.1.20:9999/ota/igs03-app-v1.4.0.bin
+
