@@ -1,13 +1,17 @@
-# Remote Admin - BLE Gateway Test Lab
+# iGS03 Remote Control Server - BLE Gateway Test Lab
 
-A Node.js server for managing remote BLE device connections with admin control capabilities.
+A Node.js server for managing iGS03 remote device connections with admin control capabilities. This project implements the [iGS03 Remote Control Server Design](./DESIGN_iGS03_Remote_Control_Server.md).
 
 ## Features
 
-- **Multiple Connection Types**: TCP and TLS support for both remote control and admin connections
-- **Device Management**: Connect, monitor, and manage BLE devices
-- **Admin Commands**: Interactive CLI to send commands to devices, list sessions, and manage connections
-- **Session Tracking**: Track connected devices with uptime, firmware versions, and MAC addresses
+- **iGS03 Support**: Specifically designed for iGS03 and compatible devices.
+- **Multiple Connection Types**: TCP and TLS support for both remote control and admin connections.
+- **Device Management**: Connect, monitor, and manage BLE devices.
+- **Admin Commands**: Interactive CLI to send commands to devices, list sessions, and manage connections.
+- **Session Tracking**: Track connected devices with uptime, firmware versions, and MAC addresses.
+- **Secure by Default**: Built-in TLS support for production-ready environments.
+
+---
 
 ## Quick Start
 
@@ -34,6 +38,8 @@ This creates:
 node remote-admin.js
 ```
 
+---
+
 ## Configuration
 
 ### Environment Variables
@@ -42,11 +48,6 @@ node remote-admin.js
 |----------|-------------|---------|
 | `TLS_KEY_PATH` | Path to TLS private key | `./tls/server.key` |
 | `TLS_CERT_PATH` | Path to TLS certificate | `./tls/server.crt` |
-
-Example with custom paths:
-```bash
-TLS_KEY_PATH=/etc/ssl/private/server.key TLS_CERT_PATH=/etc/ssl/certs/server.crt node remote-admin.js
-```
 
 ### Default Ports
 
@@ -57,16 +58,18 @@ TLS_KEY_PATH=/etc/ssl/private/server.key TLS_CERT_PATH=/etc/ssl/certs/server.crt
 | 5040 | TLS | Remote control (secure) |
 | 5041 | TLS | Admin interface (secure) |
 
+---
+
 ## Admin Commands
 
-Connect to port 5001 (or 5041 for TLS) to access the admin interface.
+Connect to port 5001 (or 5041 for TLS) to access the admin interface. Commands are case-insensitive.
 
-| Command | Description |
-|---------|-------------|
-| `ls [filter]` | List all connected devices (optional filter) |
-| `cmd <id\|mac> <command>` | Send command to device by ID or MAC |
-| `cmdall <command>` | Send command to all connected devices |
-| `drop <id>` | Drop connection by device ID |
+| Command | Description | Example |
+|---------|-------------|---------|
+| `ls [filter]` | List all connected devices (optional substring filter) | `ls 1001` |
+| `cmd <id\|mac> <cmd>` | Send command to device(s) by ID or MAC. Supports comma-separated list. | `cmd 1001 SYS` |
+| `cmdall <command>` | Send command to all connected devices | `cmdall reset` |
+| `drop <id>` | Drop connection by device Session ID | `drop 1001` |
 
 ### Examples
 
@@ -74,77 +77,58 @@ Connect to port 5001 (or 5041 for TLS) to access the admin interface.
 # List all sessions
 ls
 
-# Filter sessions containing 'trace'
+# Filter sessions by ID or metadata
 ls trace
 
-# Send command to device with ID 0x3E8
-cmd 3E8 SYS DUMP
+# Send command to device with ID 1001 (Decimal) or 0x3E8 (Hex)
+cmd 1001 SYS DUMP
+cmd 0x3E8 SYS DUMP
 
 # Send command by MAC address
 cmd AA:BB:CC:DD:EE:FF SYS
 
-# Send command to multiple devices
-cmd 1001,1002,1003 SYS
+# Send command to multiple devices (Mixed ID/MAC)
+cmd 1001,1002,AABBCCDDEEFF SYS
 
 # Broadcast command to all devices
 cmdall sys debug
 
-# Drop device with ID 1001
+# Drop device connection
 drop 1001
 ```
 
-### Device ID Formats
+### ID & MAC Formats
 
-- **Decimal**: `1001`, `2048`
-- **Hexadecimal**: `3E8`, `0x3E8` (case-insensitive, A-F supported)
+- **Session ID**: Decimal (e.g., `1001`) or Hexadecimal (e.g., `0x3E8`, `3E9`).
+- **MAC Address**: With colons (`AA:BB:CC:DD:EE:FF`) or without (`AABBCCDDEEFF`).
 
-### MAC Address Formats
+---
 
-- With colons: `AA:BB:CC:DD:EE:FF`
-- Without colons: `AABBCCDDEEFF`
-- Comma-separated for multiple targets: `AA:BB:CC:DD:EE:FF,11:22:33:44:55:66`
+## Protocol Flow
+
+1. **Connection**: Device connects to port 5000/5040.
+2. **Identification**: Device must send its MAC address within **5 seconds** (Login Validation Timeout).
+3. **Initialization**: Upon valid MAC, server responds with `SYS \n` and `SYS DBG \n`.
+4. **Maintenance**: Connection remains open with a **120s** Keep-alive/Idle timeout.
+
+---
 
 ## File Structure
 
 ```
 .
 ├── remote-admin.js             # Main server script
+├── DESIGN_iGS03_Remote_Control_Server.md  # Detailed Design Spec
 ├── remote-admin.test.js        # Unit tests
 ├── remote-admin.spec.js        # Integration tests
 ├── generate-certs.sh           # Certificate generation script
-├── tls/
-│   ├── server.key           # TLS private key (generated)
-│   └── server.crt           # TLS certificate (generated)
-└── README.md                # This file
+├── tls/                        # Generated TLS certificates
+└── README.md                   # This file
 ```
-
-## Protocol
-
-Devices identify themselves by sending their MAC address. Upon connection:
-
-1. Server waits for device MAC address (5-second timeout)
-2. Valid device receives `SYS` and `SYS DBG` commands
-3. Session is tracked with device info (firmware version, trace, etc.)
 
 ## Development
 
-To modify configuration, edit the `CONFIG` object in `remote-admin.js`:
-
-```javascript
-const CONFIG = {
-  PORTS: {
-    RC: 5000,
-    ADMIN: 5001,
-    RC_TLS: 5040,
-    ADMIN_TLS: 5041,
-  },
-  TIMEOUTS: {
-    LOGIN_VALIDATION: 5000,  // ms
-    KEEP_ALIVE: 120 * 1000,  // ms
-  },
-  // ...
-};
-```
+To modify configuration, edit the `CONFIG` object in `remote-admin.js`.
 
 ## License
 
